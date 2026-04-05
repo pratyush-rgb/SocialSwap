@@ -1,0 +1,58 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
+
+* {
+  font-family: "Poppins", sans-serif;
+}
+
+@import "tailwindcss";
+
+html {
+  background: #0d0018; /* the darkest purple from your gradient */
+  overscroll-behavior-y: none;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    @apply min-h-full;
+    margin: 0;
+    padding: 0;
+  }
+}
+.cl-rootBox * {
+  color: white !important;
+}
+
+/* Restore purple for interactive elements */
+.cl-rootBox a,
+.cl-rootBox [data-color="primary"] {
+  color: #a78bfa !important;
+}
+
+.cl-userButtonPopover *,
+.cl-userButtonPopoverCard * {
+  color: white !important;
+}
+
+button {
+  @apply cursor-pointer;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+body {
+  background: linear-gradient(to bottom, #000000, #2e026d);
+  background-attachment: fixed;
+}
+
+.cl-formButtonPrimary,
+.cl-formButtonPrimary *,
+.cl-formButtonPrimary span {
+  color: white !important;
+}
+
+.cl-drawerRoot {
+  z-index: 100;
+}
