@@ -1,8 +1,14 @@
+import { useAuth } from "@clerk/react";
 import { CirclePlusIcon, X, Shield, Eye, EyeOff, KeyRound } from "lucide-react";
 import React, { useState } from "react";
 import toast from "react-hot-toast";
+import { useDispatch } from "react-redux";
+import api from "../configs/axios";
+import { getAllUserListing } from "../app/features/lisitingSlice";
 
 const CredentialSubmittion = ({ onclose, listing }) => {
+  const { getToken } = useAuth();
+  const dispatch = useDispatch();
   const [newfield, setNewfield] = useState("");
   const [credentials, setCredentials] = useState([
     { type: "email", name: "Email", value: "" },
@@ -23,6 +29,32 @@ const CredentialSubmittion = ({ onclose, listing }) => {
 
   const handleSubmittion = async (e) => {
     e.preventDefault();
+    try {
+      if (credentials.length === 0) {
+        return toast.error("Please add at least one field");
+      }
+      for (const cred of credentials) {
+        if (!cred.value) {
+          return toast.error(`please fill in the ${cred.name} field`);
+        }
+      }
+
+      const confirm = window.confirm("Are you sure you want to submit?");
+      if (!confirm) return;
+
+      const token = await getToken();
+      const { data } = await api.post(
+        "/api/listing/add-credential",
+        { credentials, listingId: listing.id },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      toast.success(data.message);
+      dispatch(getAllUserListing({ getToken }));
+      onclose();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error?.message);
+      console.log(error);
+    }
   };
 
   const getPlatformColor = (platform) => {

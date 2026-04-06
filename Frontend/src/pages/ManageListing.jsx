@@ -1,13 +1,23 @@
+import { useAuth } from "@clerk/react";
 import { Loader, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
+import api from "../configs/axios";
+import {
+  getAllPublicListing,
+  getAllUserListing,
+} from "../app/features/lisitingSlice";
 
 const ManageListing = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const userListings = useSelector((state) => state.listings.userListings);
+
+  const { getToken } = useAuth();
+  const dispatch = useDispatch();
+
   const [loadingListing, setLoadingListing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -89,7 +99,6 @@ const ManageListing = () => {
     event.target.value = "";
   };
 
-  // Fix 1: broken filter logic (i !== i) !== index → i !== index
   const removerImage = (index) => {
     setFormData((prev) => ({
       ...prev,
@@ -113,6 +122,52 @@ const ManageListing = () => {
 
   const handelSubmit = async (e) => {
     e.preventDefault();
+    toast.loading("Saving...");
+    const dataCopy = structuredClone(formData);
+    try {
+      if (isEditing) {
+        dataCopy.images = formData.images.filter(
+          (image) => typeof image === "string",
+        );
+        const formDataInstance = new FormData(); // ✅ Correct
+        formDataInstance.append("accountDetails", JSON.stringify(dataCopy));
+        formData.images
+          .filter((image) => typeof image !== "string")
+          .forEach((image) => {
+            formDataInstance.append("images", image);
+          });
+
+        const token = await getToken();
+        const { data } = await api.put("/api/listing", formDataInstance, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        toast.dismissAll();
+        toast.success(data.message);
+        dispatch(getAllUserListing({ getToken }));
+        dispatch(getAllPublicListing());
+        navigate("/my-listings");
+      } else {
+        delete dataCopy.images;
+
+        const formDataInstance = new FormData(); // ✅ Correct (was new formData())
+        formDataInstance.append("accountDetails", JSON.stringify(dataCopy));
+        formData.images.forEach((image) => {
+          formDataInstance.append("images", image);
+        });
+        const token = await getToken();
+        const { data } = await api.post("/api/listing", formDataInstance, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        toast.dismissAll();
+        toast.success(data.message);
+        dispatch(getAllUserListing({ getToken }));
+        dispatch(getAllPublicListing());
+        navigate("/my-listings");
+      }
+    } catch (error) {
+      toast.dismissAll();
+      toast.error(error?.response?.data?.message || error.message);
+    }
   };
 
   if (loadingListing)
