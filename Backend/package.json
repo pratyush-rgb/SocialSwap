@@ -5,7 +5,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate --schema=./Prisma/schema.prisma",
     "server": "nodemon server.js",
     "start": "node server.js"
   },
@@ -22,7 +22,8 @@
     "express": "^5.2.1",
     "inngest": "^4.1.2",
     "multer": "^2.1.1",
-    "ws": "^8.20.0"
+    "ws": "^8.20.0",
+    "prisma": "^5.22.0"
   },
   "devDependencies": {
     "@types/ws": "^8.18.1",
