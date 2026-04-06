@@ -3,14 +3,11 @@ import prisma from "../Configs/prisma.js";
 
 export const inngest = new Inngest({ id: "profile-marketplace" });
 
-//function to save tthe userdata to our database
+//function to save the userdata to our database
 const syncUserCreation = inngest.createFunction(
-  { id: "sync-user-from-clerk" },
-  { event: "clerk/user.created" },
+  { id: "sync-user-from-clerk", triggers: [{ event: "clerk/user.created" }] },
   async ({ event }) => {
     const { data } = event;
-
-    //checking if user already exists in the database.
 
     const user = await prisma.user.findFirst({
       where: { id: data.id },
@@ -40,8 +37,7 @@ const syncUserCreation = inngest.createFunction(
 
 //function to delete user from database.
 const syncUserDeletion = inngest.createFunction(
-  { id: "delete-user-from-clerk" },
-  { event: "clerk/user.deleted" },
+  { id: "delete-user-from-clerk", triggers: [{ event: "clerk/user.deleted" }] },
   async ({ event }) => {
     const { data } = event;
     const listings = await prisma.listing.findMany({
@@ -71,10 +67,9 @@ const syncUserDeletion = inngest.createFunction(
   },
 );
 
-//fuction to update user data in database.
+//function to update user data in database.
 const syncUserUpdation = inngest.createFunction(
-  { id: "update-user-from-clerk" },
-  { event: "clerk/user.updated" },
+  { id: "update-user-from-clerk", triggers: [{ event: "clerk/user.updated" }] },
   async ({ event }) => {
     const { data } = event;
 
