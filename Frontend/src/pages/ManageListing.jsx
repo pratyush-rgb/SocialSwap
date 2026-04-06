@@ -77,16 +77,23 @@ const ManageListing = () => {
   const handleImageUpload = async (event) => {
     const files = Array.from(event.target.files);
     if (!files.length) return;
-    if (files.length + formData.images.length > 5)
-      return toast.error("You can add upto 5 images");
 
-    setFormData((prev) => ({ ...prev, images: [...prev.images, ...files] }));
+    setFormData((prev) => {
+      if (files.length + prev.images.length > 5) {
+        toast.error("You can add upto 5 images");
+        return prev; // ✅ uses fresh prev.images, not stale closure
+      }
+      return { ...prev, images: [...prev.images, ...files] };
+    });
+
+    event.target.value = "";
   };
 
+  // Fix 1: broken filter logic (i !== i) !== index → i !== index
   const removerImage = (index) => {
     setFormData((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => (i !== i) !== index),
+      images: prev.images.filter((_, i) => i !== index),
     }));
   };
 
@@ -232,7 +239,13 @@ const ManageListing = () => {
               onChange={(v) => handelInputChange("price", v)}
               required={true}
             />
-            <TextAreaField label="Description*" value={formData.description} />
+            {/* Fix 5: wired up onChange and required for TextAreaField */}
+            <TextAreaField
+              label="Description*"
+              value={formData.description}
+              onChange={(v) => handelInputChange("description", v)}
+              required={true}
+            />
           </Sections>
 
           {/* Images */}
@@ -251,10 +264,59 @@ const ManageListing = () => {
               <label
                 htmlFor="images"
                 className="px-4 py-2 rounded-xl text-white cursor-pointer bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 hover:border-white/2 transition-all duration-200 hover:shadow-md hover:shadow-purple-500/20 active:scale-[0.98]"
-              >Choose files</label>
-              <p></p>
+              >
+                Choose files
+              </label>
+              <p className="text-sm text-gray-500 mt-2">
+                Upload Scrrenshots or proof of your account
+              </p>
             </div>
+            {formData.images.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                {/* Fix 2: formData.images() → formData.images */}
+                {/* Fix 3: added return statement inside map */}
+                {formData.images.map((img, idx) => {
+                  return (
+                    <div key={idx} className="relative">
+                      <img
+                        src={
+                          typeof img === "string"
+                            ? img
+                            : URL.createObjectURL(img)
+                        }
+                        // Fix 4: index → idx
+                        alt={`image ${idx + 1}`}
+                        className="w-full h-24 object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removerImage(idx)}
+                        className="absolute -top-2 -right-2 size-6 flex items-center justify-center bg-red-500/90 text-white rounded-full border border-white/10 hover:bg-red-500 hover:border-white/20 transition-all duration-200"
+                      >
+                        x
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </Sections>
+          <div className="flex justify-end gap-3 text-sm">
+            <button
+              onClick={() => navigate(-1)}
+              type="button"
+              className="px-6 py-2 rounded-xl text-white bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-500"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => navigate(-1)}
+              type="submit"
+              className="px-6 py-2 rounded-xl text-black font-medium bg-linear-to-r from-purple-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-400 transition-all duration-500 shadow-lg shadow-purple-900/30"
+            >
+              {isEditing ? "Update Listing" : "Create Listing"}
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -333,6 +395,7 @@ const TextAreaField = ({ label, value, onChange, required = false }) => (
       rows={5}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      required={required}
     />
   </div>
 );
