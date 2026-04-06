@@ -9,6 +9,7 @@ import MyOrders from "./pages/MyOrders";
 import Loading from "./pages/Loading";
 import Navbar from "./components/Navbar";
 import ChatBox from "./components/ChatBox";
+import AiAssistant from "./components/AiAssistant"; // IMPORT ADDED HERE
 import { Toaster } from "react-hot-toast";
 
 const App = () => {
@@ -30,6 +31,7 @@ const App = () => {
       </Routes>
 
       <ChatBox />
+      <AiAssistant /> {/* COMPONENT ADDED HERE */}
     </div>
   );
 };
