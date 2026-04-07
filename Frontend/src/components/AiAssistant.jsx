@@ -28,7 +28,7 @@ const AiAssistant = () => {
 
     try {
       // Connect to your Node.js backend running on port 3000
-      const response = await fetch('https://jubilant-giggle-jxx7jjg5r7rcqrp9-3000.app.github.dev/api/ai-chat', {
+      const response = await fetch('https://social-swap-backend.vercel.app/api/ai-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMessage })
