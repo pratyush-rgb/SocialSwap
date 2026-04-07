@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Loader2Icon, WalletIcon } from "lucide-react";
-import AdminTitle from "../../components/admin/AdminTitle";
+
 import WithdrawalDetail from "../../components/admin/WithdrawalDetail";
 import { dummyWithdrawalRequests } from "../../assets/assets";
 
