@@ -18,9 +18,27 @@ import CredentialChange from "./pages/Admin/CredentialChange";
 import AllListings from "./pages/Admin/AllListings";
 import Transactions from "./pages/Admin/Transactions";
 import Withdrawal from "./pages/Admin/Withdrawal";
+import { useAuth, useUser } from "@clerk/react";
+import { useDispatch } from "react-redux";
+import { useEffect } from "react";
+import {
+  getAllPublicListing,
+  getAllUserListing,
+} from "./app/features/lisitingSlice";
 
 const App = () => {
   const { pathname } = useLocation();
+  const { getToken } = useAuth();
+  const { user, isLoaded } = useUser();
+  const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(getAllPublicListing());
+  }, []);
+  useEffect(() => {
+    if (isLoaded && user) {
+      dispatch(getAllUserListing({ getToken }));
+    }
+  }, [isLoaded, user]);
   return (
     <div className="min-h-screen">
       <Toaster />

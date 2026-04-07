@@ -3,9 +3,13 @@ import { dummyChats } from "../assets/assets";
 import { MessageCircle, Search } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { setChat } from "../app/features/chatSlice";
+import { useAuth, useUser } from "@clerk/react";
+import api from "../configs/axios";
+import toast from "react-hot-toast";
 
 const Messages = () => {
-  const user = { id: "user_1" };
+  const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
 
   const dispatch = useDispatch();
 
@@ -18,17 +22,29 @@ const Messages = () => {
   };
 
   const fetchUserchats = async () => {
-    setChats(dummyChats);
-    setLoading(false);
+    try {
+      const token = await getToken();
+      const { data } = await api.get("/api/chat/user", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setChats(data.chats);
+      setLoading(false);
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error?.message);
+      console.log(error);
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchUserchats();
-    const interval = setInterval(() => {
+    if (user && isLoaded) {
       fetchUserchats();
-    }, 10 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+      const interval = setInterval(() => {
+        fetchUserchats();
+      }, 10 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [user, isLoaded]);
 
   const filteredChats = chats.filter(
     (chat) =>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { dummyOrders, platformIcons } from "../assets/assets";
+import { platformIcons } from "../assets/assets";
 import toast from "react-hot-toast";
 import {
   CheckCircle2,
@@ -7,24 +7,37 @@ import {
   ChevronUp,
   Copy,
   DollarSign,
-  Loader2,
   Loader2Icon,
 } from "lucide-react";
+import { useAuth, useUser } from "@clerk/react";
+import api from "../configs/axios";
 
 const MyOrders = () => {
+  const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
   const currency = import.meta.env.VITE_CURRENCY || "$";
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
 
   const fetchOrders = async () => {
-    setOrders(dummyOrders);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const token = await getToken();
+      const { data } = await api.get("/api/listing/users-orders", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setOrders(data.orders);
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    if (user && isLoaded) fetchOrders();
+  }, [isLoaded, user]);
 
   const mask = (val, type) => {
     if (!val && val !== 0) return "-";
@@ -74,7 +87,6 @@ const MyOrders = () => {
               key={id}
               className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 flex flex-col max-w-4xl text-white"
             >
-              {" "}
               <div className="flex items-start gap-4 flex-1">
                 <div className="p-2 rounded-lg bg-white/5 max-sm:hidden">
                   {platformIcons[listing.platform]}
@@ -118,11 +130,11 @@ const MyOrders = () => {
                 >
                   {isExpanded ? (
                     <>
-                      <ChevronUp className="size-4 " /> Hide Credentials
+                      <ChevronUp className="size-4" /> Hide Credentials
                     </>
                   ) : (
                     <>
-                      <ChevronDown className="size-4 " /> view Credentials
+                      <ChevronDown className="size-4" /> View Credentials
                     </>
                   )}
                 </button>
@@ -134,9 +146,9 @@ const MyOrders = () => {
                 </div>
               </div>
               {isExpanded && (
-                <div className="mt-4 md:mt-0 pt-4">
+                <div className="mt-4 pt-4">
                   <div className="space-y-2">
-                    {credential.updatedCredential.map((cred) => (
+                    {credential?.updatedCredential?.map((cred) => (
                       <div
                         key={cred.name}
                         className="flex items-center justify-between gap-3 bg-white/5 rounded-md p-2"
@@ -147,7 +159,6 @@ const MyOrders = () => {
                           </p>
                           <p className="text-xs text-gray-200">{cred.type}</p>
                         </div>
-
                         <div className="flex items-center gap-2">
                           <code className="text-sm font-mono">
                             {mask(cred.value, cred.type)}

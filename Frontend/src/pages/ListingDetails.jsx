@@ -24,8 +24,10 @@ import {
   Copyright,
 } from "lucide-react";
 import { setChat } from "../app/features/chatSlice";
+import { useUser } from "@clerk/react";
 
 const ListingDetails = () => {
+  const { user, isLoaded } = useUser();
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -48,6 +50,8 @@ const ListingDetails = () => {
     setCurrent((prev) => (prev === images.length - 1 ? 0 : prev + 1));
 
   const loadChat = () => {
+    if (!isLoaded || !user) return toast("Login to chat with seller");
+    if (user.id === listing.ownerId) return toast("You can chat with yourself");
     dispatch(setChat({ listing: listing }));
   };
 

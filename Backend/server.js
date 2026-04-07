@@ -4,7 +4,9 @@ import cors from "cors";
 import { clerkMiddleware } from "@clerk/express";
 import { serve } from "inngest/express";
 import { inngest, functions } from "./ingest/index.js";
-import { GoogleGenerativeAI } from "@google/generative-ai"; // Added this!
+import { GoogleGenerativeAI } from "@google/generative-ai"; // Your AI import
+import listingRouter from "./routes/listingroutes.js";      // Friend's new route
+import chatRouter from "./routes/chatroutes.js";            // Friend's new route
 
 // Initialize the Gemini AI Model
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -33,8 +35,12 @@ app.get("/", (req, res) => res.send("Server UP!!!"));
 
 app.use("/api/inngest", serve({ client: inngest, functions }));
 
-// --- AI Chatbot Endpoint ---
-app.post("/api/chat", async (req, res) => {
+// Friend's new routes
+app.use("/api/listing", listingRouter);
+app.use("/api/chat", chatRouter);
+
+// --- AI Chatbot Endpoint (Renamed to avoid collision) ---
+app.post("/api/ai-chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
     
