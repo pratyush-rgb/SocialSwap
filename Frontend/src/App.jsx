@@ -25,6 +25,7 @@ import {
   getAllPublicListing,
   getAllUserListing,
 } from "./app/features/lisitingSlice";
+import api from "./configs/axios";
 
 const App = () => {
   const { pathname } = useLocation();
@@ -39,6 +40,34 @@ const App = () => {
       dispatch(getAllUserListing({ getToken }));
     }
   }, [isLoaded, user]);
+
+  useEffect(() => {
+    const syncUser = async () => {
+      if (!isLoaded || !user) return;
+
+      try {
+        const token = await getToken();
+        if (!token) return;
+
+        await api.post(
+          "/api/auth/sync",
+          {
+            email: user.primaryEmailAddress?.emailAddress,
+            name: user.fullName || user.firstName || "User",
+            image: user.imageUrl,
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+      } catch (error) {
+        console.log("User sync failed", error?.response?.data || error.message);
+      }
+    };
+
+    syncUser();
+  }, [isLoaded, user, getToken]);
+
   return (
     <div className="min-h-screen">
       <Toaster />

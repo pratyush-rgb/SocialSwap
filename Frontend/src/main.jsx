@@ -7,9 +7,12 @@ import { dark } from "@clerk/themes";
 import { Provider } from "react-redux";
 import { store } from "./app/store.js";
 
+const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <ClerkProvider
+      publishableKey={clerkPublishableKey}
       appearance={{
         baseTheme: dark,
         variables: {

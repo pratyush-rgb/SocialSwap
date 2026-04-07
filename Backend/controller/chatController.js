@@ -1,15 +1,20 @@
 //getting the chat
 
-import prisma from "../Configs/prisma.js";
+import { Chat, Listing, Message } from "../models/index.js";
+
+const chatPopulateOptions = [
+  { path: "listing" },
+  { path: "ownerUser" },
+  { path: "chatUser" },
+  { path: "messages", options: { sort: { createdAt: 1 } } },
+];
 
 export const getChat = async (req, res) => {
   try {
     const { userId } = await req.auth();
     const { listingId, chatId } = req.body;
 
-    const listing = await prisma.listing.findUnique({
-      where: { id: listingId },
-    });
+    const listing = await Listing.findById(listingId);
 
     if (!listing) {
       return res.status(404).json({ message: "Listing not found" });
@@ -18,69 +23,44 @@ export const getChat = async (req, res) => {
     let existingChat = null;
 
     if (chatId) {
-      existingChat = await prisma.chat.findFirst({
-        where: {
-          id: chatId,
-          OR: [{ chatUserId: userId }, { ownerUserId: userId }],
-        },
-        include: {
-          listing: true,
-          ownerUser: true,
-          chatUser: true,
-          messages: true,
-        },
-      });
+      existingChat = await Chat.findOne({
+        _id: chatId,
+        $or: [{ chatUserId: userId }, { ownerUserId: userId }],
+      }).populate(chatPopulateOptions);
     } else {
-      existingChat = await prisma.chat.findFirst({
-        where: {
-          listingId,
-          chatUserId: userId,
-          ownerUserId: listing.ownerId,
-        },
-        include: {
-          listing: true,
-          ownerUser: true,
-          chatUser: true,
-          messages: true,
-        },
-      });
+      existingChat = await Chat.findOne({
+        listingId,
+        chatUserId: userId,
+        ownerUserId: listing.ownerId,
+      }).populate(chatPopulateOptions);
     }
 
     if (existingChat) {
       res.json({ chat: existingChat });
 
       if (existingChat.isLastMessageRead === false) {
-        const lastMessage =
-          existingChat.messages[existingChat.messages.length - 1];
+        const lastMessage = existingChat.messages?.at(-1);
+        const isLastMessageSendByMe = lastMessage?.sender_id === userId;
 
-        const isLastMessageSendByMe = lastMessage.sender_id === userId;
-
-        if (!isLastMessageSendByMe) {
-          await prisma.chat.update({
-            where: { id: existingChat.id },
-            data: { isLastMessageRead: true },
-          });
+        if (lastMessage && !isLastMessageSendByMe) {
+          await Chat.updateOne(
+            { _id: existingChat.id },
+            { isLastMessageRead: true }
+          );
         }
       }
       return null;
     }
 
-    const newChat = await prisma.chat.create({
-      data: {
-        listingId,
-        chatUserId: userId,
-        ownerUserId: listing.ownerId,
-      },
+    const newChat = await Chat.create({
+      listingId,
+      chatUserId: userId,
+      ownerUserId: listing.ownerId,
     });
 
-    const chatWithData = await prisma.chat.findUnique({
-      where: { id: newChat.id },
-      include: {
-        listing: true,
-        ownerUser: true,
-        chatUser: true,
-      },
-    });
+    const chatWithData = await Chat.findById(newChat.id).populate(
+      chatPopulateOptions
+    );
 
     return res.json({ chat: chatWithData });
   } catch (error) {
@@ -94,17 +74,15 @@ export const getAllUserChats = async (req, res) => {
   try {
     const { userId } = await req.auth();
 
-    const chats = await prisma.chat.findMany({
-      where: {
-        OR: [{ chatUserId: userId }, { ownerUserId: userId }],
-      },
-      include: {
-        listing: true,
-        ownerUser: true,
-        chatUser: true,
-      },
-      orderBy: { updatedAt: "desc" },
-    });
+    const chats = await Chat.find({
+      $or: [{ chatUserId: userId }, { ownerUserId: userId }],
+    })
+      .populate([
+        { path: "listing" },
+        { path: "ownerUser" },
+        { path: "chatUser" },
+      ])
+      .sort({ updatedAt: -1 });
 
     if (!chats || chats.length === 0) {
       return res.json({ chats: [] });
@@ -123,21 +101,14 @@ export const sendChatMessage = async (req, res) => {
     const { userId } = await req.auth();
     const { chatId, message } = req.body;
 
-    const chat = await prisma.chat.findFirst({
-      where: {
-        AND: [
-          { id: chatId },
-          {
-            OR: [{ chatUserId: userId }, { ownerUserId: userId }],
-          },
-        ],
-      },
-      include: {
-        listing: true,
-        ownerUser: true,
-        chatUser: true,
-      },
-    });
+    const chat = await Chat.findOne({
+      _id: chatId,
+      $or: [{ chatUserId: userId }, { ownerUserId: userId }],
+    }).populate([
+      { path: "listing" },
+      { path: "ownerUser" },
+      { path: "chatUser" },
+    ]);
 
     if (!chat) {
       return res.status(404).json({ message: "Chat not found" });
@@ -146,29 +117,26 @@ export const sendChatMessage = async (req, res) => {
         message: `Listing is ${chat.listing.status}`,
       });
     }
-    const newMessage = {
+
+    const newMessage = await Message.create({
       message,
       sender_id: userId,
       chatId,
       createdAt: new Date(),
-    };
-
-    await prisma.message.create({
-      data: newMessage,
     });
+
+    await Chat.updateOne(
+      { _id: chatId },
+      {
+        lastMessage: newMessage.message,
+        isLastMessageRead: false,
+        lastMessageSenderId: userId,
+      }
+    );
 
     res.json({
       message: "Message Sent",
       newMessage,
-    });
-
-    await prisma.chat.update({
-      where: { id: chatId },
-      data: {
-        lastMessage: newMessage.message,
-        isLastMessageRead: false,
-        lastMessageSenderId: userId,
-      },
     });
   } catch (error) {
     console.log(error);
