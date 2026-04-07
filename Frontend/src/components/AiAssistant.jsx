@@ -27,8 +27,8 @@ const AiAssistant = () => {
     setIsSending(true);
 
     try {
-      // Connect to your Python backend here
-      const response = await fetch('http://localhost:8000/api/chat', {
+      // Connect to your Node.js backend running on port 3000
+      const response = await fetch('https://jubilant-giggle-jxx7jjg5r7rcqrp9-3000.app.github.dev/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMessage })

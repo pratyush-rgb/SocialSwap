@@ -1,7 +1,7 @@
-import AdminTitle from "../../components/admin/AdminTitle";
+import AdminTitle from "../../components/Admin/AdminTitle";
 import { useEffect } from "react";
 import { useState } from "react";
-import CredentialVerifyModal from "../../components/admin/CredentialVerifyModal";
+import CredentialVerifyModal from "../../components/Admin/CredentialVerifyModal";
 import { Loader2Icon, ShieldCheckIcon } from "lucide-react";
 import { dummyListings } from "../../assets/assets";
 
